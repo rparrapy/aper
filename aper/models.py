@@ -29,14 +29,15 @@ class User(UserMixin, Base):
             'id': self.id,
             'name': self.name,
             'email': self.email,
-            'order': self.order
+            'order': self.order,
+            'absent_on': self.absent_on
         }
 
     @classmethod
     def allowed_users(cls):
-        return User.query.filter(
-            or_(User.absent_on != str(date.today()),
-                User.absent_on == None)).order_by(User.order).limit(
+        return cls.query.filter(
+            or_(cls.absent_on != str(date.today()),
+                cls.absent_on == None)).order_by(cls.order).limit(
                     current_app.config['QUEUE_SIZE']).all()
 
     def __repr__(self):
