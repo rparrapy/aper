@@ -1,7 +1,9 @@
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String
+from flask import current_app
+from sqlalchemy import Column, Integer, String, Date, or_
 from sqlalchemy.sql.expression import func
 from .db import Base, db_session
+from datetime import date
 
 
 class User(UserMixin, Base):
@@ -12,15 +14,14 @@ class User(UserMixin, Base):
     email = Column(String(100), unique=True)
     name = Column(String(100))
     order = Column(Integer, nullable=False)
+    absent_on = Column(Date)
 
     def __init__(self, name, email):
         self.email = email
         self.name = name
         max_order = db_session.query(func.max(User.order)).scalar()
         self.order = max_order + 1 if max_order else 1
-
-    def __repr__(self):
-        return '<User {}[{}]>'.format(self.name, self.email)
+        self.absent_on = None
 
     def serialize(self):
         """Return object data in serializeable format"""
@@ -30,3 +31,16 @@ class User(UserMixin, Base):
             'email': self.email,
             'order': self.order
         }
+
+    @classmethod
+    def allowed_users(cls):
+        return User.query.filter(
+            or_(User.absent_on != str(date.today()),
+                User.absent_on == None)).order_by(User.order).limit(
+                    current_app.config['QUEUE_SIZE']).all()
+
+    def __repr__(self):
+        return '<User {}[{}]>'.format(self.name, self.email)
+
+    def __eq__(self, value):
+        return self.id == value.id and self.name == value.name and self.order == value.order and self.absent_on == value.absent_on

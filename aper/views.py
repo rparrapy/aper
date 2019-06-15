@@ -15,3 +15,13 @@ def index():
 def users():
     users = [u.serialize() for u in User.query.all()]
     return jsonify(users)
+
+
+@app.route('/open_gate', methods=['GET'])
+@login_required
+def open_gate():
+    allowed_users = User.allowed_users()
+    if current_user in allowed_users:
+        return 'Open Sesame'
+    else:
+        return 'You cannot park inside today', 403
