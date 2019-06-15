@@ -9,5 +9,16 @@ app.config.from_pyfile('config.py', silent=True)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+from .db import db_session, Base
+from flask_migrate import Migrate
+
+migrate = Migrate(app, Base)
+
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    db_session.remove()
+
+
 import aper.auth
 import aper.views
